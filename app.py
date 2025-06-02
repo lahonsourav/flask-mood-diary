@@ -70,6 +70,11 @@ Diary entries:
 """
 ]
 
+@app.route("/")
+def home():
+    return "Flask app is running!"
+
+
 @app.route("/api/mood-diary", methods=["POST"])
 def mood_diary():
     print("Received POST /api/mood-diary")
