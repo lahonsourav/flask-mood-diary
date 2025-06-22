@@ -109,10 +109,11 @@ def mood_diary():
         return jsonify({"error": "Failed to generate summary"}), 500
     
 # for development
-# cred = credentials.Certificate("./mood-diary-f25f9-firebase-adminsdk-fbsvc-5195de75fb.json")
+cred = credentials.Certificate("./mood-diary-f25f9-firebase-adminsdk-fbsvc-87ffa83797.json")
 
 # for production
-cred = credentials.Certificate("./etc/secrets/mood-diary-f25f9-firebase-adminsdk-fbsvc-5195de75fb.json")
+# cred = credentials.Certificate("/etc/secrets/mood-diary-f25f9-firebase-adminsdk-fbsvc-87ffa83797.json")
+
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -137,6 +138,8 @@ def register_token():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+    
+#Client side logic
 # @app.route("/api/send_notifications", methods=["POST"])
 # def send_notifications():
 #     try:
@@ -175,6 +178,8 @@ def register_token():
 #     except Exception as e:
 #         return jsonify({"error": str(e)}), 500
 
+
+#server side logic
 @app.route("/api/send_notifications", methods=["POST"])
 def send_notifications():
     try:
