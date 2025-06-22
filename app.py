@@ -5,6 +5,9 @@ from flask_cors import CORS
 from google import generativeai as genai
 from dotenv import load_dotenv
 from datetime import datetime
+import firebase_admin
+from firebase_admin import credentials, firestore
+import requests
 
 load_dotenv()
 
@@ -104,6 +107,112 @@ def mood_diary():
     except Exception as e:
         print("Error from Gemini:", e)
         return jsonify({"error": "Failed to generate summary"}), 500
+    
+    
+cred = credentials.Certificate("./mood-diary-f25f9-firebase-adminsdk-fbsvc-5195de75fb.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
+@app.route("/api/register_token", methods=["POST"])
+def register_token():
+    try:
+        data = request.get_json()
+        token = data.get("token")
+        device_info = data.get("deviceInfo", {})
+
+        if not token:
+            return jsonify({"error": "No token provided"}), 400
+
+        db.collection("push_tokens").document(token).set({
+            "token": token,
+        })
+
+        print(f"token: {token}")
+
+        return jsonify({"status": "success", "token": token}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+# @app.route("/api/send_notifications", methods=["POST"])
+# def send_notifications():
+#     try:
+#         db = firestore.client()
+#         tokens_ref = db.collection("push_tokens")
+#         docs = tokens_ref.stream()
+
+#         messages = []
+#         for doc in docs:
+#             data = doc.to_dict()
+#             token = data.get("token")
+#             if token:
+#                 messages.append({
+#                     "to": token,
+#                     "sound": "default",
+#                     "title": "Mood check! 🕵️‍♂️",
+#                     "body": "How are you feeling today?",
+#                     "data": { "targetTab": "MoodSelection" }
+#                 })
+
+#         # Send notifications in batches of 100
+#         for i in range(0, len(messages), 100):
+#             chunk = messages[i:i + 100]
+#             response = requests.post(
+#                 "https://exp.host/--/api/v2/push/send",
+#                 headers={
+#                     "Accept": "application/json",
+#                     "Content-Type": "application/json"
+#                 },
+#                 json=chunk
+#             )
+#             print(f"Sent chunk {i // 100 + 1}: {response.status_code}, {response.text}")
+
+#         return jsonify({"status": "notifications sent"}), 200
+
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
+@app.route("/api/send_notifications", methods=["POST"])
+def send_notifications():
+    try:
+        data = request.get_json()
+        title = data.get("title", "Mood check! 🕵️‍♂️")
+        body = data.get("body", "How are you feeling today?")
+
+        tokens_ref = db.collection("push_tokens")
+        docs = tokens_ref.stream()
+
+        messages = []
+        for doc in docs:
+            token = doc.to_dict().get("token")
+            if token:
+                messages.append({
+                    "to": token,
+                    "sound": "default",
+                    "title": title,
+                    "body": body,
+                    "data": {"targetTab": "MoodSelection"}
+                })
+
+        # Send in batches of 100
+        for i in range(0, len(messages), 100):
+            chunk = messages[i:i + 100]
+            response = requests.post(
+                "https://exp.host/--/api/v2/push/send",
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                json=chunk
+            )
+            print(f"Sent chunk {i // 100 + 1}: {response.status_code}, {response.text}")
+
+        return jsonify({"status": "notifications sent"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
