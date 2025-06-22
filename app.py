@@ -108,8 +108,11 @@ def mood_diary():
         print("Error from Gemini:", e)
         return jsonify({"error": "Failed to generate summary"}), 500
     
-    
-cred = credentials.Certificate("./mood-diary-f25f9-firebase-adminsdk-fbsvc-5195de75fb.json")
+# for development
+# cred = credentials.Certificate("./mood-diary-f25f9-firebase-adminsdk-fbsvc-5195de75fb.json")
+
+# for production
+cred = credentials.Certificate("./etc/secrets/mood-diary-f25f9-firebase-adminsdk-fbsvc-5195de75fb.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
