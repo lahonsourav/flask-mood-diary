@@ -4,10 +4,12 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from google import generativeai as genai
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, time as dt_time
 import firebase_admin
 from firebase_admin import credentials, firestore
 import requests
+import time
+from apscheduler.schedulers.background import BackgroundScheduler
 
 load_dotenv()
 
@@ -122,7 +124,6 @@ def register_token():
     try:
         data = request.get_json()
         token = data.get("token")
-        device_info = data.get("deviceInfo", {})
 
         if not token:
             return jsonify({"error": "No token provided"}), 400
@@ -137,89 +138,58 @@ def register_token():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
-    
-#Client side logic
-# @app.route("/api/send_notifications", methods=["POST"])
-# def send_notifications():
-#     try:
-#         db = firestore.client()
-#         tokens_ref = db.collection("push_tokens")
-#         docs = tokens_ref.stream()
-
-#         messages = []
-#         for doc in docs:
-#             data = doc.to_dict()
-#             token = data.get("token")
-#             if token:
-#                 messages.append({
-#                     "to": token,
-#                     "sound": "default",
-#                     "title": "Mood check! 🕵️‍♂️",
-#                     "body": "How are you feeling today?",
-#                     "data": { "targetTab": "MoodSelection" }
-#                 })
-
-#         # Send notifications in batches of 100
-#         for i in range(0, len(messages), 100):
-#             chunk = messages[i:i + 100]
-#             response = requests.post(
-#                 "https://exp.host/--/api/v2/push/send",
-#                 headers={
-#                     "Accept": "application/json",
-#                     "Content-Type": "application/json"
-#                 },
-#                 json=chunk
-#             )
-#             print(f"Sent chunk {i // 100 + 1}: {response.status_code}, {response.text}")
-
-#         return jsonify({"status": "notifications sent"}), 200
-
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
 
 
-#server side logic
+def send_push_notification(title, body):
+    tokens_ref = db.collection("push_tokens")
+    docs = tokens_ref.stream()
+
+    messages = []
+    for doc in docs:
+        token = doc.to_dict().get("token")
+        if token:
+            messages.append({
+                "to": token,
+                "sound": "default",
+                "title": title,
+                "body": body,
+                "data": {"targetTab": "MoodSelection"}
+            })
+
+    for i in range(0, len(messages), 100):
+        chunk = messages[i:i + 100]
+        response = requests.post(
+            "https://exp.host/--/api/v2/push/send",
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            },
+            json=chunk
+        )
+        print(f"Sent chunk {i // 100 + 1}: {response.status_code}, {response.text}")
+
 @app.route("/api/send_notifications", methods=["POST"])
-def send_notifications():
+def manual_notification():
     try:
         data = request.get_json()
         title = data.get("title", "Mood check! 🕵️‍♂️")
         body = data.get("body", "How are you feeling today?")
-
-        tokens_ref = db.collection("push_tokens")
-        docs = tokens_ref.stream()
-
-        messages = []
-        for doc in docs:
-            token = doc.to_dict().get("token")
-            if token:
-                messages.append({
-                    "to": token,
-                    "sound": "default",
-                    "title": title,
-                    "body": body,
-                    "data": {"targetTab": "MoodSelection"}
-                })
-
-        # Send in batches of 100
-        for i in range(0, len(messages), 100):
-            chunk = messages[i:i + 100]
-            response = requests.post(
-                "https://exp.host/--/api/v2/push/send",
-                headers={
-                    "Accept": "application/json",
-                    "Content-Type": "application/json"
-                },
-                json=chunk
-            )
-            print(f"Sent chunk {i // 100 + 1}: {response.status_code}, {response.text}")
-
+        send_push_notification(title, body)
         return jsonify({"status": "notifications sent"}), 200
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+def schedule_notifications():
+    now = datetime.now()
+    if dt_time(9, 0) <= now.time() <= dt_time(22, 0):
+        print("Scheduled notification triggered")
+        send_push_notification("Mood check 🕒", "Take a moment to reflect. How are you feeling?")
+
+scheduler = BackgroundScheduler()
+for hour in [9, 12, 15, 18, 21]:
+    scheduler.add_job(schedule_notifications, 'cron', hour=hour, minute=24)
+
+scheduler.start()
 
 
 if __name__ == "__main__":
