@@ -8,7 +8,6 @@ from datetime import datetime, time as dt_time
 import firebase_admin
 from firebase_admin import credentials, firestore
 import requests
-import time
 from apscheduler.schedulers.background import BackgroundScheduler
 
 load_dotenv()
