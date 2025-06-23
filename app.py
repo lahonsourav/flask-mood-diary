@@ -74,6 +74,27 @@ Diary entries:
 """
 ]
 
+NOTIFICATION_TITLES = [
+    "Mood check 🕵️",
+    "Time for a vibe check!",
+    "Take a breath 🧘",
+    "How are you, really?",
+    "Let's log your mood 🌈",
+    "Reflect for a moment 🪞",
+    "Mindful minute ⏳"
+]
+
+NOTIFICATION_BODIES = [
+    "How are you feeling today?",
+    "Take a moment to reflect 🌤",
+    "Your mood matters — let's note it!",
+    "Share how your day's going 😊",
+    "What's on your mind right now?",
+    "Pause and check in with yourself 💭",
+    "A quick mood update helps track your wellness!"
+]
+
+
 @app.route("/")
 def home():
     return "Flask app is running!"
@@ -181,8 +202,11 @@ def manual_notification():
 def schedule_notifications():
     now = datetime.now()
     if dt_time(9, 0) <= now.time() <= dt_time(22, 0):
-        print("Scheduled notification triggered")
-        send_push_notification("Mood check 🕒", "Take a moment to reflect. How are you feeling?")
+        title = random.choice(NOTIFICATION_TITLES)
+        body = random.choice(NOTIFICATION_BODIES)
+        print(f"Scheduled notification triggered with: {title} - {body}")
+        send_push_notification(title, body)
+
 
 scheduler = BackgroundScheduler()
 for hour in [9, 12, 15, 18, 21]:

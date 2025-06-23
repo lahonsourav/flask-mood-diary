@@ -1,3 +1,4 @@
 .env
 venv/*
 mood-diary-f25f9-firebase-adminsdk-fbsvc-87ffa83797.json
+.vscode
