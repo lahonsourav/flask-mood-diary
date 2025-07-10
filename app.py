@@ -9,6 +9,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
+import pytz
 
 load_dotenv()
 
@@ -21,58 +22,84 @@ genai.configure(api_key=GEMINI_API_KEY)
 # List of prompts
 PROMPTS = [
     """
-Given the following list of time-stamped mood entries with short notes, write a warm, story-like mood diary for the user.
-Walk through the user’s emotional journey, narrating how they felt at each point in time.
-Make the tone gentle and uplifting. Include a few poetic or metaphorical lines to enhance emotional depth.
-Give thoughtful advice or encouragement based on the emotional patterns.
-End the response with a new line that says:
-"Overall, today you were [MOOD]" — where [MOOD] is selected from this list only (exact spelling):
+Here’s a list of my time-stamped mood entries for today, along with little notes I wrote in the moment.
+Write a warm, personal diary entry in the first person, as if I’m gently reflecting on my day at bedtime.
+Do not include the exact times—just write naturally from morning to night.
+
+In the **first paragraph**, describe how my day unfolded emotionally, using poetic or metaphorical language where it feels right. Let it flow like a calm, soft story from the start of my day to the end.
+
+In the **second paragraph**, reflect on both my emotional wins and the difficult moments—what felt good, what didn’t, and how I handled it all.
+
+In the **third paragraph**, help me think about a small resolution or personal intention I could carry into tomorrow based on today’s experience.
+
+Finally, end with:
+"Overall, today I was [MOOD]"
+
+Select [MOOD] from this exact list:
 Happy, Relaxed, Cheerful, Motivated, Sleepy, Anxious, Sad, Crying, Frustrated, Angry, Neutral, Hopeful, Disappoint, Grateful, Confused, Calm, Excited, Thoughtful
 
 Mood entries:
 {mood_entries}
 """,
     """
-Pretend you're the user’s emotional companion.
-Create a comforting mood diary from these time-stamped emotions and notes.
-Describe how the user felt throughout the day using narrative and emotion-aware language.
-Insert short poetic reflections or metaphors where appropriate.
-Offer one piece of kind, supportive advice based on the overall trend of their feelings.
-Then, finish your message with:
-"Overall, today you were [MOOD]" — selected from:
+Imagine I’m writing in my private journal before bed, reflecting on the emotional journey of my day.
+Use the time-stamped moods and notes to help me remember how I felt, but don’t include the exact times in the writing.
+
+Start with a **first paragraph** that gently narrates how my feelings changed throughout the day, like a story told softly to myself. Include light poetic or emotional language when it fits.
+
+In the **second paragraph**, help me reflect on what went well and what didn’t—both the successes and the emotional struggles.
+
+In the **third paragraph**, offer a small piece of personal insight or a resolution I might take into tomorrow, based on what I’ve experienced today.
+
+Then end with this line:
+"Overall, today I was [MOOD]"
+
+Choose [MOOD] from:
 Happy, Relaxed, Cheerful, Motivated, Sleepy, Anxious, Sad, Crying, Frustrated, Angry, Neutral, Hopeful, Disappoint, Grateful, Confused, Calm, Excited, Thoughtful
 
 Entries:
 {mood_entries}
 """,
     """
-Take the following mood diary entries with time, emotion, and a brief note.
-Turn them into a soft, poetic narrative of the user's emotional day.
-Your goal is to uplift and reflect.
-Use light verse or poetic lines (but not rhyme-heavy), and create a story around the user's changing moods.
-End with a line of comforting advice or hope.
-Finally, conclude with this sentence on a new line:
-"Overall, today you were [MOOD]"
+I’ve saved my mood entries for today—each with a note from the heart.
+Can you help me turn these into a soft, emotional journal entry?
 
-Choose the [MOOD] from:
+In the **first paragraph**, write as if I’m recalling my day from beginning to end, flowing through the emotions without listing the times. Keep the voice human, warm, and lightly poetic.
+
+In the **second paragraph**, reflect on my emotional highs and lows—where I found comfort or joy, and where I felt stuck or overwhelmed.
+
+In the **third paragraph**, help me draw a small resolution from today’s experience, something gentle I can aim for tomorrow.
+
+At the end, write:
+"Overall, today I was [MOOD]"
+
+Pick [MOOD] from:
 Happy, Relaxed, Cheerful, Motivated, Sleepy, Anxious, Sad, Crying, Frustrated, Angry, Neutral, Hopeful, Disappoint, Grateful, Confused, Calm, Excited, Thoughtful
 
-Entries:
+Mood entries:
 {mood_entries}
 """,
     """
-Use the following entries (which include timestamp, mood, and a brief note) to write a creative summary of the user’s day.
-Present it as a flowing emotional narrative, tracing the user's journey through different moods.
-Include metaphorical or poetic expressions where fitting.
-Share one helpful tip or uplifting message for tomorrow.
-Then on a new final line, output:
-"Overall, today you were [MOOD]" — choosing one from:
+I’ve collected some mood entries from today—each with how I felt and a small note.
+Can you write a reflective journal entry in the first person?
+
+In the **first paragraph**, take me through the story of my day emotionally, starting from morning to night. Leave out the timestamps. Use soft, expressive, and slightly poetic language.
+
+In the **second paragraph**, reflect honestly on my emotional successes and setbacks—what gave me peace or pride, and what challenged or drained me.
+
+In the **third paragraph**, suggest a gentle resolution I can carry into tomorrow, drawn from what I’ve learned about myself today.
+
+Then, on a new line, conclude with:
+"Overall, today I was [MOOD]"
+
+Choose [MOOD] from:
 Happy, Relaxed, Cheerful, Motivated, Sleepy, Anxious, Sad, Crying, Frustrated, Angry, Neutral, Hopeful, Disappoint, Grateful, Confused, Calm, Excited, Thoughtful
 
 Diary entries:
 {mood_entries}
 """
 ]
+
 
 NOTIFICATION_TITLES = [
     "Mood check 🕵️",
@@ -100,6 +127,7 @@ def home():
     return "Flask app is running!"
 
 
+
 @app.route("/api/mood-diary", methods=["POST"])
 def mood_diary():
     print("Received POST /api/mood-diary")
@@ -109,8 +137,11 @@ def mood_diary():
         return jsonify({"error": "Invalid or missing JSON data"}), 400
 
     moods = data.get("moods", [])
+    device_id = data.get("device_id")
     if not moods:
         return jsonify({"error": "No moods provided"}), 400
+    if not device_id:
+        return jsonify({"error": "No device_id provided"}), 400
 
     # Format the mood entries
     mood_entries = "\n".join(
@@ -125,6 +156,20 @@ def mood_diary():
         model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(selected_prompt)
         print("Gemini response:", response.text)
+
+        # Save diary to Firestore
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        diary_ref = db.collection("user_diaries").document(device_id)
+        diary_doc = diary_ref.get()
+        diaries = diary_doc.to_dict() if diary_doc.exists else {}
+        if diaries is None:
+            diaries = {}
+        diaries[today_str] = {
+            "summary": response.text,
+            "moods": moods
+        }
+        diary_ref.set({today_str: {"summary": response.text, "moods": moods}}, merge=True)
+
         return jsonify({"summary": response.text})
     except Exception as e:
         print("Error from Gemini:", e)
@@ -144,21 +189,95 @@ def register_token():
     try:
         data = request.get_json()
         token = data.get("token")
+        device_id = data.get("device_id")
 
         if not token:
             return jsonify({"error": "No token provided"}), 400
+        if not device_id:
+            return jsonify({"error": "No device_id provided"}), 400
 
-        db.collection("push_tokens").document(token).set({
+        db.collection("push_tokens").document(device_id).set({
             "token": token,
+            "device_id": device_id,
         })
 
-        print(f"token: {token}")
+        print(f"Registered token: {token} for device: {device_id}")
 
-        return jsonify({"status": "success", "token": token}), 200
+        return jsonify({"status": "success", "token": token, "device_id": device_id}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/save_mood", methods=["POST"])
+def save_mood():
+    try:
+        data = request.get_json()
+        device_id = data.get("device_id")
+        mood = data.get("mood")  # should be a dict with emoji, label, note, timestamp
+
+        if not device_id or not mood:
+            return jsonify({"error": "Missing device_id or mood"}), 400
+
+        date_str = datetime.fromtimestamp(mood["timestamp"] / 1000).strftime("%Y-%m-%d")
+        doc_ref = db.collection("user_moods").document(device_id)
+        doc = doc_ref.get()
+        moods_by_date = doc.to_dict() if doc.exists else {}
+        if moods_by_date is None:
+            moods_by_date = {}
+
+        moods_for_day = moods_by_date.get(date_str, [])
+        moods_for_day.append(mood)
+        # Use merge=True to avoid overwriting unrelated data
+        doc_ref.set({date_str: moods_for_day}, merge=True)
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/api/generate-diary-for-date", methods=["POST"])
+def generate_diary_for_date():
+    data = request.get_json(force=True)
+    device_id = data.get("device_id")
+    date = data.get("date")  # format: YYYY-MM-DD
+
+    if not device_id or not date:
+        return jsonify({"error": "Missing device_id or date"}), 400
+
+    # Get moods for that date
+    moods_doc = db.collection("user_moods").document(device_id).get()
+    moods_by_date = moods_doc.to_dict() if moods_doc.exists else {}
+    if moods_by_date is None:
+        moods_by_date = {}
+    moods = moods_by_date.get(date, [])
+
+    if not moods:
+        return jsonify({"error": "No moods for this date"}), 404
+
+    mood_entries = "\n".join(
+        f"{datetime.fromtimestamp(m['timestamp'] / 1000).strftime('%H:%M')} {m['label']}: {m['note']}"
+        for m in moods
+    )
+    selected_prompt = random.choice(PROMPTS).format(mood_entries=mood_entries)
+
+    try:
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(selected_prompt)
+        summary = response.text
+    except Exception as e:
+        print("Error from Gemini:", e)
+        summary = "Failed to generate summary."
+
+    # Save diary to Firestore (cloud)
+    diary_ref = db.collection("user_diaries").document(device_id)
+    diary_ref.set({date: {"summary": summary, "moods": moods}}, merge=True)
+
+    # Also return the diary so the client can store it locally
+    return jsonify({
+        "summary": summary,
+        "moods": moods,
+        "date": date,
+        "device_id": device_id,
+        "status": "saved_to_cloud_and_returned_for_local"
+    })
 
 def send_push_notification(title, body):
     tokens_ref = db.collection("push_tokens")
@@ -166,7 +285,8 @@ def send_push_notification(title, body):
 
     messages = []
     for doc in docs:
-        token = doc.to_dict().get("token")
+        data = doc.to_dict()
+        token = data.get("token")
         if token:
             messages.append({
                 "to": token,
@@ -200,11 +320,16 @@ def manual_notification():
         return jsonify({"error": str(e)}), 500
 
 def schedule_notifications():
-    now = datetime.now()
-    if dt_time(9, 0) <= now.time() <= dt_time(22, 0):
+    # Convert current UTC time to Indian time
+    india_tz = pytz.timezone("Asia/Kolkata")
+    now_utc = datetime.utcnow().replace(tzinfo=pytz.utc)
+    now_india = now_utc.astimezone(india_tz)
+
+    # Use Indian time for notification logic
+    if dt_time(9, 0) <= now_india.time() <= dt_time(22, 0):
         title = random.choice(NOTIFICATION_TITLES)
         body = random.choice(NOTIFICATION_BODIES)
-        print(f"Scheduled notification triggered with: {title} - {body}")
+        print(f"Scheduled notification triggered (IST {now_india.strftime('%H:%M')}) with: {title} - {body}")
         send_push_notification(title, body)
 
 
