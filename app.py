@@ -217,12 +217,12 @@ def save_mood():
     try:
         data = request.get_json()
         device_id = data.get("device_id")
-        mood = data.get("mood")  # should be a dict with emoji, label, note, timestamp
-
+        mood = data.get("mood")
+        date_str = data.get("date")
         if not device_id or not mood:
             return jsonify({"error": "Missing device_id or mood"}), 400
 
-        date_str = datetime.fromtimestamp(mood["timestamp"] / 1000).strftime("%Y-%m-%d")
+        # date_str = datetime.fromtimestamp(mood["timestamp"] / 1000).strftime("%Y-%m-%d")
         doc_ref = db.collection("user_moods").document(device_id)
         doc = doc_ref.get()
         moods_by_date = doc.to_dict() if doc.exists else {}
