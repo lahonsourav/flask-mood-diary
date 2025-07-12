@@ -138,10 +138,14 @@ def mood_diary():
 
     moods = data.get("moods", [])
     device_id = data.get("device_id")
+    date_str = data.get("date")  # ← Get date from client
+
     if not moods:
         return jsonify({"error": "No moods provided"}), 400
     if not device_id:
         return jsonify({"error": "No device_id provided"}), 400
+    if not date_str:
+        return jsonify({"error": "No date provided"}), 400  # Optional but safer
 
     # Format the mood entries
     mood_entries = "\n".join(
@@ -149,7 +153,6 @@ def mood_diary():
         for m in moods
     )
 
-    # Choose a prompt randomly
     selected_prompt = random.choice(PROMPTS).format(mood_entries=mood_entries)
 
     try:
@@ -157,24 +160,20 @@ def mood_diary():
         response = model.generate_content(selected_prompt)
         print("Gemini response:", response.text)
 
-        # Save diary to Firestore
-        today_str = datetime.now().strftime("%Y-%m-%d")
+        # Save diary to Firestore under the provided date
         diary_ref = db.collection("user_diaries").document(device_id)
-        diary_doc = diary_ref.get()
-        diaries = diary_doc.to_dict() if diary_doc.exists else {}
-        if diaries is None:
-            diaries = {}
-        diaries[today_str] = {
-            "summary": response.text,
-            "moods": moods
-        }
-        diary_ref.set({today_str: {"summary": response.text, "moods": moods}}, merge=True)
+        diary_ref.set({
+            date_str: {
+                "summary": response.text,
+                "moods": moods
+            }
+        }, merge=True)
 
         return jsonify({"summary": response.text})
     except Exception as e:
         print("Error from Gemini:", e)
         return jsonify({"error": "Failed to generate summary"}), 500
-    
+
 # for development
 cred = credentials.Certificate("./mood-diary-f25f9-firebase-adminsdk-fbsvc-87ffa83797.json")
 
