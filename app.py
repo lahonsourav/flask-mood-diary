@@ -122,7 +122,7 @@ NOTIFICATION_BODIES = [
 ]
 
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def home():
     return "Flask app is running!"
 
@@ -212,13 +212,14 @@ def register_token():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/save_mood", methods=["POST"])
 def save_mood():
     try:
         data = request.get_json()
         device_id = data.get("device_id")
         mood = data.get("mood")
-        date_str = data.get("date")  # e.g., "2025-07-13"
+
+        # ✅ Extract date from inside mood
+        date_str = mood.get("date") if mood else None
 
         if not device_id or not mood or not date_str:
             return jsonify({"error": "Missing device_id, mood, or date"}), 400
@@ -232,6 +233,7 @@ def save_mood():
         moods_for_day = moods_by_date.get(date_str, [])
         moods_for_day.append(mood)
 
+        # ✅ Merge with existing data
         doc_ref.set({date_str: moods_for_day}, merge=True)
 
         return jsonify({"status": "success"}), 200
