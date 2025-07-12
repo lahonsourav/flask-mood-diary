@@ -191,14 +191,18 @@ def register_token():
         token = data.get("token")
         device_id = data.get("device_id")
 
-        if not token:
-            return jsonify({"error": "No token provided"}), 400
         if not device_id:
             return jsonify({"error": "No device_id provided"}), 400
+
+        # If token is None (not sent at all), treat as empty string
+        if token is None:
+            token = ""
 
         db.collection("push_tokens").document(device_id).set({
             "token": token,
             "device_id": device_id,
+            "notifications_enabled": bool(token),  # optional flag
+            "updated_at": firestore.SERVER_TIMESTAMP
         })
 
         print(f"Registered token: {token} for device: {device_id}")
@@ -207,6 +211,7 @@ def register_token():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/api/save_mood", methods=["POST"])
 def save_mood():
