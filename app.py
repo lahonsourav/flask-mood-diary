@@ -149,7 +149,7 @@ def mood_diary():
 
     # Format the mood entries
     mood_entries = "\n".join(
-        f"{datetime.fromtimestamp(m['timestamp'] / 1000).strftime('%H:%M')} {m['label']}: {m['note']}"
+        f"{m.get('time', '??:??')} {m['label']}: {m['note']}"
         for m in moods
     )
 
@@ -218,11 +218,11 @@ def save_mood():
         data = request.get_json()
         device_id = data.get("device_id")
         mood = data.get("mood")
-        date_str = data.get("date")
-        if not device_id or not mood:
-            return jsonify({"error": "Missing device_id or mood"}), 400
+        date_str = data.get("date")  # e.g., "2025-07-13"
 
-        # date_str = datetime.fromtimestamp(mood["timestamp"] / 1000).strftime("%Y-%m-%d")
+        if not device_id or not mood or not date_str:
+            return jsonify({"error": "Missing device_id, mood, or date"}), 400
+
         doc_ref = db.collection("user_moods").document(device_id)
         doc = doc_ref.get()
         moods_by_date = doc.to_dict() if doc.exists else {}
@@ -231,11 +231,14 @@ def save_mood():
 
         moods_for_day = moods_by_date.get(date_str, [])
         moods_for_day.append(mood)
-        # Use merge=True to avoid overwriting unrelated data
+
         doc_ref.set({date_str: moods_for_day}, merge=True)
+
         return jsonify({"status": "success"}), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
     
 @app.route("/api/generate-diary-for-date", methods=["POST"])
 def generate_diary_for_date():
@@ -257,7 +260,7 @@ def generate_diary_for_date():
         return jsonify({"error": "No moods for this date"}), 404
 
     mood_entries = "\n".join(
-        f"{datetime.fromtimestamp(m['timestamp'] / 1000).strftime('%H:%M')} {m['label']}: {m['note']}"
+        f"{m.get('time', '??:??')} {m['label']}: {m['note']}"
         for m in moods
     )
     selected_prompt = random.choice(PROMPTS).format(mood_entries=mood_entries)
