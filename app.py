@@ -214,12 +214,23 @@ def register_token():
 @app.route("/api/save_mood", methods=["POST"])
 def save_mood():
     try:
-        data = request.get_json()
-        device_id = data.get("device_id")
-        mood = data.get("mood")
+        data = request.get_json(force=True)
 
-        # ✅ Extract date from inside mood
-        date_str = mood.get("date") if mood else None
+        if not isinstance(data, dict):
+            return jsonify({"error": "Invalid JSON format"}), 400
+
+        device_id = data.get("device_id")
+
+        mood = {
+            "emoji": data.get("emoji"),
+            "label": data.get("mood"),
+            "note": data.get("note"),
+            "date": data.get("date"),
+            "time": data.get("time"),
+            "timestamp": data.get("timestamp"),
+        }
+
+        date_str = mood["date"]
 
         if not device_id or not mood or not date_str:
             return jsonify({"error": "Missing device_id, mood, or date"}), 400
@@ -233,13 +244,14 @@ def save_mood():
         moods_for_day = moods_by_date.get(date_str, [])
         moods_for_day.append(mood)
 
-        # ✅ Merge with existing data
         doc_ref.set({date_str: moods_for_day}, merge=True)
 
         return jsonify({"status": "success"}), 200
 
     except Exception as e:
+        print("❌ Exception:", e)
         return jsonify({"error": str(e)}), 500
+
 
     
 @app.route("/api/generate-diary-for-date", methods=["POST"])
