@@ -211,7 +211,7 @@ def register_token():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
+@app.route("/api/save_mood", methods=["POST"])
 def save_mood():
     try:
         data = request.get_json()
@@ -343,10 +343,9 @@ def schedule_notifications():
 
 
 scheduler = BackgroundScheduler()
-for hour in [9, 12, 15, 18, 21]:
-    scheduler.add_job(schedule_notifications, 'cron', hour=hour, minute=24)
-
+scheduler.add_job(schedule_notifications, 'cron', minute=24)  # Runs every hour at :24
 scheduler.start()
+
 
 
 if __name__ == "__main__":
