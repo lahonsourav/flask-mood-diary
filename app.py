@@ -26,6 +26,8 @@ Here’s a list of my time-stamped mood entries for today, along with little not
 Write a warm, personal diary entry in the first person, as if I’m gently reflecting on my day at bedtime.
 Do not include the exact times—just write naturally from morning to night.
 
+Write like a human—let it feel personal, emotional, and genuine, not like something an AI would generate.
+
 In the **first paragraph**, describe how my day unfolded emotionally, using poetic or metaphorical language where it feels right. Let it flow like a calm, soft story from the start of my day to the end.
 
 In the **second paragraph**, reflect on both my emotional wins and the difficult moments—what felt good, what didn’t, and how I handled it all.
@@ -44,6 +46,8 @@ Mood entries:
     """
 Imagine I’m writing in my private journal before bed, reflecting on the emotional journey of my day.
 Use the time-stamped moods and notes to help me remember how I felt, but don’t include the exact times in the writing.
+
+Write like a human—emotional, reflective, and honest. Avoid sounding robotic or too perfect.
 
 Start with a **first paragraph** that gently narrates how my feelings changed throughout the day, like a story told softly to myself. Include light poetic or emotional language when it fits.
 
@@ -64,6 +68,8 @@ Entries:
 I’ve saved my mood entries for today—each with a note from the heart.
 Can you help me turn these into a soft, emotional journal entry?
 
+Write like a human—imperfect, warm, personal, and emotionally nuanced.
+
 In the **first paragraph**, write as if I’m recalling my day from beginning to end, flowing through the emotions without listing the times. Keep the voice human, warm, and lightly poetic.
 
 In the **second paragraph**, reflect on my emotional highs and lows—where I found comfort or joy, and where I felt stuck or overwhelmed.
@@ -83,6 +89,8 @@ Mood entries:
 I’ve collected some mood entries from today—each with how I felt and a small note.
 Can you write a reflective journal entry in the first person?
 
+Please write like a real person—gentle, honest, and expressive. Don’t sound too polished or artificial.
+
 In the **first paragraph**, take me through the story of my day emotionally, starting from morning to night. Leave out the timestamps. Use soft, expressive, and slightly poetic language.
 
 In the **second paragraph**, reflect honestly on my emotional successes and setbacks—what gave me peace or pride, and what challenged or drained me.
@@ -99,6 +107,7 @@ Diary entries:
 {mood_entries}
 """
 ]
+
 
 
 NOTIFICATION_TITLES = [
