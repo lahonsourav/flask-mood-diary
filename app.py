@@ -38,7 +38,11 @@ Finally, end with:
 "Overall, today I was [MOOD]"
 
 Select [MOOD] from this exact list:
-Happy, Relaxed, Cheerful, Motivated, Sleepy, Anxious, Sad, Crying, Frustrated, Angry, Neutral, Hopeful, Disappoint, Grateful, Confused, Calm, Excited, Thoughtful
+Happy, Relaxed, Cheerful, Motivated, Grateful, Excited, Hopeful, Calm, Thoughtful,
+Sad, Crying, Anxious, Frustrated, Angry, Disappointed, Confused, Sleepy,
+Sick, Nauseous, Sneezing, In Pain, Hungry, Satisfied, Tired,
+In Love, Loving, Affectionate, Romantic,
+Neutral
 
 Mood entries:
 {mood_entries}
@@ -59,7 +63,11 @@ Then end with this line:
 "Overall, today I was [MOOD]"
 
 Choose [MOOD] from:
-Happy, Relaxed, Cheerful, Motivated, Sleepy, Anxious, Sad, Crying, Frustrated, Angry, Neutral, Hopeful, Disappoint, Grateful, Confused, Calm, Excited, Thoughtful
+Happy, Relaxed, Cheerful, Motivated, Grateful, Excited, Hopeful, Calm, Thoughtful,
+Sad, Crying, Anxious, Frustrated, Angry, Disappointed, Confused, Sleepy,
+Sick, Nauseous, Sneezing, In Pain, Hungry, Satisfied, Tired,
+In Love, Loving, Affectionate, Romantic,
+Neutral
 
 Entries:
 {mood_entries}
@@ -80,7 +88,11 @@ At the end, write:
 "Overall, today I was [MOOD]"
 
 Pick [MOOD] from:
-Happy, Relaxed, Cheerful, Motivated, Sleepy, Anxious, Sad, Crying, Frustrated, Angry, Neutral, Hopeful, Disappoint, Grateful, Confused, Calm, Excited, Thoughtful
+Happy, Relaxed, Cheerful, Motivated, Grateful, Excited, Hopeful, Calm, Thoughtful,
+Sad, Crying, Anxious, Frustrated, Angry, Disappointed, Confused, Sleepy,
+Sick, Nauseous, Sneezing, In Pain, Hungry, Satisfied, Tired,
+In Love, Loving, Affectionate, Romantic,
+Neutral
 
 Mood entries:
 {mood_entries}
@@ -101,12 +113,17 @@ Then, on a new line, conclude with:
 "Overall, today I was [MOOD]"
 
 Choose [MOOD] from:
-Happy, Relaxed, Cheerful, Motivated, Sleepy, Anxious, Sad, Crying, Frustrated, Angry, Neutral, Hopeful, Disappoint, Grateful, Confused, Calm, Excited, Thoughtful
+Happy, Relaxed, Cheerful, Motivated, Grateful, Excited, Hopeful, Calm, Thoughtful,
+Sad, Crying, Anxious, Frustrated, Angry, Disappointed, Confused, Sleepy,
+Sick, Nauseous, Sneezing, In Pain, Hungry, Satisfied, Tired,
+In Love, Loving, Affectionate, Romantic,
+Neutral
 
 Diary entries:
 {mood_entries}
 """
 ]
+
 
 
 
