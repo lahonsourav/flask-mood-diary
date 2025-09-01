@@ -3,7 +3,7 @@ name: Daily render ping
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Runs hourly at UTC
+    - cron: '0 */3 * * *'  # Runs every 3 at UTC
   workflow_dispatch:
 
 jobs:
